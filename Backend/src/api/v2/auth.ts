@@ -36,12 +36,17 @@ const authRoutes = new Elysia({
         '/login',
         async ({ body, jwt }) => {
             const database = await db
-            const { email, password } = body
+            const { identifier, password } = body
 
             const userRecords = await database
                 .select()
                 .from(users)
-                .where(eq(users.email, email))
+                .where(
+                    or(
+                        eq(users.username, identifier),
+                        eq(users.email, identifier)
+                    )
+                )
                 .limit(1)
 
             if (userRecords.length === 0) {
@@ -87,7 +92,7 @@ const authRoutes = new Elysia({
         },
         {
             body: t.Object({
-                email: t.String({ format: 'email' }),
+                identifier: t.String(),
                 password: t.String()
             })
         }
@@ -96,7 +101,7 @@ const authRoutes = new Elysia({
         '/register',
         async ({ body }) => {
             const database = await db
-            const { firstname, lastname, username, email, password } = body
+            const { firstname, lastname, username, email, role, password } = body
 
             const existing = await database
                 .select()
@@ -115,6 +120,7 @@ const authRoutes = new Elysia({
                 lastname,
                 username,
                 email,
+                role,
                 password: hashedPassword
             })
 
@@ -126,6 +132,7 @@ const authRoutes = new Elysia({
                 lastname: t.String(),
                 username: t.String(),
                 email: t.String({ format: 'email' }),
+                role: t.Enum({ user: 'user', admin: 'admin' }),
                 password: t.String({ minLength: 8 })
             })
         }
