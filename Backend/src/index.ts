@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
 import { authRoutes } from "./api/v2/auth";
 import { deviceV2Routes } from "./api/v2/device";
 import { userRoutes } from "./api/v2/user";
@@ -17,6 +18,11 @@ db
   });
 
 const app = new Elysia()
+  .use(
+    cors({
+      origin: "*"
+    })
+  )
   .use(deviceV2Routes)
   .use(authRoutes)
   .use(userRoutes)
