@@ -17,7 +17,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         setIsLoading(true);
 
         try {
-            const response = await fetch('/api/v2/user/login', {
+            const response = await fetch('/api/v2/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
