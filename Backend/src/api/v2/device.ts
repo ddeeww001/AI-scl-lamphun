@@ -1,8 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { jwt } from '@elysiajs/jwt'
+import { sql } from 'drizzle-orm'
 import { and, eq } from 'drizzle-orm/sql/expressions/conditions'
 import { db } from '../..'
-import { deviceOwners, devies } from '../../db/schema'
+import { deviceData, deviceOwners, devices } from '../../db/schema'
 
 const deviceDataItem = t.Object({
   monitorItem: t.String(),
@@ -40,6 +41,21 @@ const deviceRegisterResponseSchema = t.Object({
   message: t.String()
 })
 
+const deviceDeleteResponseSchema = t.Object({
+  code: t.Number(),
+  message: t.String()
+})
+
+const deviceRangeResponseSchema = t.Object({
+  code: t.Number(),
+  data: t.Array(
+    t.Object({
+      monitorValue: t.String(),
+      monitorTime: t.String()
+    })
+  )
+})
+
 const getBearerToken = (authHeader?: string) => {
   if (!authHeader) return null
   const [scheme, token] = authHeader.split(' ')
@@ -64,6 +80,18 @@ const buildEmptyResponse = (deviceId: string) => ({
   message: 'ok',
   status: 'ok'
 })
+
+const toGmtPlus7String = (timestamp: number) => {
+  const ms = timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp
+  const shifted = new Date(ms + 7 * 60 * 60 * 1000)
+  const pad = (value: number) => String(value).padStart(2, '0')
+
+  return `${shifted.getUTCFullYear()}-${pad(
+    shifted.getUTCMonth() + 1
+  )}-${pad(shifted.getUTCDate())} ${pad(
+    shifted.getUTCHours()
+  )}:${pad(shifted.getUTCMinutes())}:${pad(shifted.getUTCSeconds())}`
+}
 
 export const deviceRoutes = new Elysia({
   prefix: '/api/v2/device'
@@ -106,15 +134,16 @@ export const deviceRoutes = new Elysia({
 
       const existing = await database
         .select()
-        .from(devies)
-        .where(eq(devies.secretId, deviceId))
+        .from(devices)
+        .where(eq(devices.deviceId, deviceId))
         .limit(1)
 
       let deviceRecord = existing[0]
 
       if (deviceRecord) {
         const storedKey = deviceRecord.deviceKey ?? ''
-        const validKey = await Bun.password.verify(deviceSecretKey, storedKey)
+        let validKey = false
+        let normalizedKey: string | null = null
 
         if (!validKey) {
           return {
@@ -122,12 +151,17 @@ export const deviceRoutes = new Elysia({
             message: 'Invalid device secret'
           }
         }
-      } else {
-        const hashedSecretKey = await Bun.password.hash(deviceSecretKey)
 
-        await database.insert(devies).values({
-          secretId: deviceId,
-          deviceKey: hashedSecretKey,
+        if (normalizedKey && normalizedKey !== storedKey) {
+          await database
+            .update(devices)
+            .set({ deviceKey: normalizedKey })
+            .where(eq(devices.id, deviceRecord.id))
+        }
+      } else {
+        await database.insert(devices).values({
+          deviceId: deviceId,
+          deviceKey: deviceSecretKey,
           monitorItem,
           customName: customName ?? null,
           deviceName: null,
@@ -137,8 +171,8 @@ export const deviceRoutes = new Elysia({
 
         const created = await database
           .select()
-          .from(devies)
-          .where(eq(devies.secretId, deviceId))
+          .from(devices)
+          .where(eq(devices.deviceId, deviceId))
           .limit(1)
 
         deviceRecord = created[0]
@@ -193,22 +227,155 @@ export const deviceRoutes = new Elysia({
       response: deviceRegisterResponseSchema
     }
   )
-  .post(
+  .delete(
     '/',
-    ({ body }) => {
+    async ({ body, headers, jwt }) => {
+      const token = getBearerToken(headers.authorization)
+
+      if (!token) {
+        return {
+          code: 401,
+          message: 'Missing Authorization header'
+        }
+      }
+
+      const payload = await jwt.verify(token).catch(() => null)
+
+      if (!payload || typeof payload.id !== 'number') {
+        return {
+          code: 401,
+          message: 'Invalid or expired token'
+        }
+      }
+
+      const database = await db
       const { deviceId } = body
 
-      return buildEmptyResponse(deviceId)
+      const deviceRecords = await database
+        .select()
+        .from(devices)
+        .where(eq(devices.deviceId, deviceId))
+        .limit(1)
+
+      const deviceRecord = deviceRecords[0]
+
+      if (!deviceRecord) {
+        return {
+          code: 404,
+          message: 'Device not found'
+        }
+      }
+
+      const ownership = await database
+        .select()
+        .from(deviceOwners)
+        .where(
+          and(
+            eq(deviceOwners.userId, payload.id),
+            eq(deviceOwners.deviceId, deviceRecord.id)
+          )
+        )
+        .limit(1)
+
+      if (ownership.length === 0) {
+        return {
+          code: 403,
+          message: 'Forbidden'
+        }
+      }
+
+      await database
+        .delete(deviceOwners)
+        .where(
+          and(
+            eq(deviceOwners.userId, payload.id),
+            eq(deviceOwners.deviceId, deviceRecord.id)
+          )
+        )
+
+      const remainingOwners = await database
+        .select()
+        .from(deviceOwners)
+        .where(eq(deviceOwners.deviceId, deviceRecord.id))
+        .limit(1)
+
+      if (remainingOwners.length === 0) {
+        const deviceRecordDeviceId = deviceRecord.deviceId
+
+        if (!deviceRecordDeviceId) {
+          return {
+            code: 500,
+            message: 'Device record is missing a deviceId'
+          }
+        }
+
+        await database
+          .delete(deviceData)
+          .where(eq(deviceData.deviceId, deviceRecordDeviceId))
+
+        await database
+          .delete(deviceOwners)
+          .where(eq(deviceOwners.deviceId, deviceRecord.id))
+
+        await database.delete(devices).where(eq(devices.id, deviceRecord.id))
+      }
+
+      return {
+        code: 200,
+        message: 'ok'
+      }
+    },
+    {
+      headers: t.Object({
+        authorization: t.String()
+      }),
+      body: t.Object({
+        deviceId: t.String()
+      }),
+      response: deviceDeleteResponseSchema
+    }
+  )
+  .post(
+    '/',
+    async ({ body }) => {
+      const database = await db
+      const { deviceId, start, end } = body
+
+      const startTime = Math.min(start, end)
+      const endTime = Math.max(start, end)
+      const startGmtPlus7 = toGmtPlus7String(startTime)
+      const endGmtPlus7 = toGmtPlus7String(endTime)
+
+      const rows = await database
+        .select({
+          monitorValue: deviceData.monitorValue,
+          monitorTime: deviceData.monitorTime
+        })
+        .from(deviceData)
+        .where(
+          sql`${deviceData.deviceId} = ${deviceId} AND ${
+            deviceData.monitorTime
+          } BETWEEN ${startGmtPlus7} AND ${endGmtPlus7}`
+        )
+        .orderBy(deviceData.monitorTime)
+
+      return {
+        code: 200,
+        data: rows.map((row) => ({
+          monitorValue: row.monitorValue ?? '',
+          monitorTime: row.monitorTime ?? ''
+        }))
+      }
     },
     {
       body: t.Object({
         deviceId: t.String(),
         deviceSecretKey: t.String(),
-        minitorItem: t.String(),
+        monitorItem: t.String(),
         start: t.Number(),
         end: t.Number()
       }),
-      response: deviceResponseSchema
+      response: deviceRangeResponseSchema
     }
   )
   .post(
