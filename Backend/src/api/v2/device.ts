@@ -63,22 +63,19 @@ const getBearerToken = (authHeader?: string) => {
   return token
 }
 
-const buildEmptyResponse = (deviceId: string) => ({
-  code: 0,
-  data: [
-    {
-      data: [],
-      dataStatus: 0,
-      deviceId,
-      deviceStatus: 0,
-      id: 0,
-      customname: '',
-      name: '',
-      sensorNumber: 0
-    }
-  ],
-  message: 'ok',
-  status: 'ok'
+const deviceBatchRangeResponseSchema = t.Object({
+  code: t.Number(),
+  data: t.Array(
+    t.Object({
+      deviceId: t.String(),
+      data: t.Array(
+        t.Object({
+          monitorValue: t.String(),
+          monitorTime: t.String()
+        })
+      )
+    })
+  )
 })
 
 const toGmtPlus7String = (timestamp: number) => {
@@ -380,25 +377,57 @@ export const deviceRoutes = new Elysia({
   )
   .post(
     '/batch',
-    ({ body }) => {
-      const firstDevice = body.deviceList[0]
-      const deviceId = firstDevice ? firstDevice.deviceId : ''
+    async ({ body }) => {
+      const database = await db
+      const { start, end } = body
+      const startTime = Math.min(start, end)
+      const endTime = Math.max(start, end)
+      const startGmtPlus7 = toGmtPlus7String(startTime)
+      const endGmtPlus7 = toGmtPlus7String(endTime)
 
-      return buildEmptyResponse(deviceId)
+      const results = await Promise.all(
+        body.deviceList.map(async (device) => {
+          const rows = await database
+            .select({
+              monitorValue: deviceData.monitorValue,
+              monitorTime: deviceData.monitorTime
+            })
+            .from(deviceData)
+            .where(
+              sql`${deviceData.deviceId} = ${device.deviceId} AND ${
+                deviceData.monitorTime
+              } BETWEEN ${startGmtPlus7} AND ${endGmtPlus7}`
+            )
+            .orderBy(deviceData.monitorTime)
+
+          return {
+            deviceId: device.deviceId,
+            data: rows.map((row) => ({
+              monitorValue: row.monitorValue ?? '',
+              monitorTime: row.monitorTime ?? ''
+            }))
+          }
+        })
+      )
+
+      return {
+        code: 200,
+        data: results
+      }
     },
     {
       body: t.Object({
         deviceList: t.Array(
           t.Object({
             deviceId: t.String(),
-            deviceSecretKey: t.String()
+            deviceSecretKey: t.String(),
+            monitorItem: t.String()
           })
         ),
-        monitorItem: t.Array(t.String()),
         start: t.Number(),
         end: t.Number()
       }),
-      response: deviceResponseSchema
+      response: deviceBatchRangeResponseSchema
     }
   )
   .post(
