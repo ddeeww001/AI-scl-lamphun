@@ -1,4 +1,5 @@
 import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Search } from "lucide-react";
 import DashboardPage from '../pages/DashboardPage';
 import Station from '../pages/Station';
 import styles from '../styles/NavBar.module.css';
@@ -54,7 +55,7 @@ const MenuBar = () => {
       {/* 3. Search & Profile (ขวาสุด) */}
       <div className={styles.rightGroup}>
         <div className={styles.searchBox}>
-          <span className={styles.searchIcon}>🔍</span>
+          <Search size={14} className={styles.searchIcon} />
           <input type="text" placeholder="Search" className={styles.searchInput} />
         </div>
         <button 
