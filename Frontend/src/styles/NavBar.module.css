@@ -96,7 +96,7 @@
 }
 
 .searchIcon {
-    color: var(--color-text-secondary);
+    color: #111827;
     font-size: 14px;
     margin-right: 8px;
 }
@@ -137,17 +137,27 @@
 /* Layout Wrapper */
 .layoutContainer {
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
     background-color: var(--color-bg-page);
     box-sizing: border-box;
 }
 
 .contentArea {
+    flex: 1;
     width: 100%;
     max-width: 1440px;
     margin: 0 auto;
     padding: 24px 40px;
     box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.contentAreaFullHeight {
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
 }
 
 @media (max-width: 1024px) {
