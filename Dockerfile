@@ -27,7 +27,7 @@ COPY --from=build-frontend /app/frontend/dist ./public
 
 # 4. สิทธิ์ความปลอดภัย
 RUN chown -R bun:bun /app
-USER bun
+#USER bun
 
 EXPOSE 3000
 
