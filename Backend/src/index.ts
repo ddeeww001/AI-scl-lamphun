@@ -3,7 +3,7 @@ import { cors } from "@elysiajs/cors";
 import { authRoutes } from "./api/v2/auth";
 import { deviceRoutes } from "./api/v2/device";
 import { userRoutes } from "./api/v2/user";
-import { initialize } from "./db/database";
+import {db, initialize } from "./db/database";
 import { startMainStreamCorrectionSync, startMainStreamLatestSync } from "./services/mainStream";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -18,8 +18,8 @@ try {
   console.log("✅ Database connected successfully");
   
   // 3. เริ่มทำงาน Background Services
-  startMainStreamLatestSync(database);
-  startMainStreamCorrectionSync(database);
+  startMainStreamLatestSync(db);
+  startMainStreamCorrectionSync(db);
 
   // 4. พอ DB พร้อมปุ๊บ เราค่อยสร้างแอป Elysia และเปิดประตูรับ Request
   const app = new Elysia()

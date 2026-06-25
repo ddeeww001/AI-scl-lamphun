@@ -1,4 +1,4 @@
-import { initialize } from "./database"; // ปรับ path ให้ตรงกับไฟล์ของเต้
+import {db, initialize } from "./database"; // ปรับ path ให้ตรงกับไฟล์ของเต้
 import { users, devices, deviceData } from "./schema"; // ปรับ path
 import { sql } from "drizzle-orm";
 
@@ -6,7 +6,7 @@ async function main() {
   console.log("🌱 [Seeding] Starting database seeding process...");
 
   // 1. Connect to Database
-  const db = await initialize();
+  await initialize();
 
   try {
     // ==========================================
@@ -33,9 +33,6 @@ async function main() {
     // ==========================================
     // Step 3: Extract (Read JSON)
     // ==========================================
-    console.log("📂 [Seeding] Loading raw data from JSON files...");
-    const waterDataRaw = await Bun.file("./water_data.json").json();
-    const rainDataRaw = await Bun.file("./rain_data.json").json();
 
     // ==========================================
     // Step 4: Transform & Load (Insert to DB)

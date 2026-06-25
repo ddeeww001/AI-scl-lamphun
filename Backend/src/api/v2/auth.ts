@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { jwt } from '@elysiajs/jwt'
-import { db } from '../..'
+import { db } from '../../db/database'
 import { sql } from 'drizzle-orm'
 import { eq, or } from 'drizzle-orm/sql/expressions/conditions'
 import { sessions, users } from '../../db/schema'
