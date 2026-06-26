@@ -1,93 +1,138 @@
-import { useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import { Crosshair, X } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import styles from '../styles/MapGIS.module.css';
-import MapSearch from './MapSearch';
+import { useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import styles from "../styles/MapGIS.module.css";
 
-interface StationInfo {
+// ---- Types ----
+interface Station {
   id: string;
   name: string;
-  location: string;
+  detail: string;
   lat: number;
   lng: number;
-  status: 'normal' | 'warning' | 'critical' | 'offline';
+  status: "normal" | "warning" | "critical";
   waterLevel: number;
   rainfall: number;
 }
 
-const MOCK_STATIONS: StationInfo[] = [
-  { id: 'S001', name: 'สถานี 1', location: 'อ.เมือง ลำพูน', lat: 18.795, lng: 99.01, status: 'normal', waterLevel: 1.50, rainfall: 25.0 },
-  { id: 'S002', name: 'สถานี 2', location: 'อ.ท่าวุง ลำพูน', lat: 18.785, lng: 99.02, status: 'normal', waterLevel: 0.80, rainfall: 10.0 },
-  { id: 'S003', name: 'สถานี 3', location: 'อ.บ้านธิ ลำพูน', lat: 18.80, lng: 99.005, status: 'warning', waterLevel: 2.50, rainfall: 50.5 },
-  { id: 'S004', name: 'สถานี 4', location: 'อ.เมือง ลำพูน', lat: 18.79, lng: 99.03, status: 'critical', waterLevel: 3.80, rainfall: 80.0 },
-  { id: 'S005', name: 'สถานี 5', location: 'อ.ท่าวุง ลำพูน', lat: 18.775, lng: 99.025, status: 'normal', waterLevel: 1.20, rainfall: 5.0 },
-  { id: 'S006', name: 'สถานี 6', location: 'อ.เมือง ลำพูน', lat: 18.805, lng: 99.015, status: 'warning', waterLevel: 2.10, rainfall: 35.0 },
+// ---- Mock Data ----
+const STATIONS: Station[] = [
+  {
+    id: "1",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.81,
+    lng: 98.99,
+    status: "normal",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "2",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.795,
+    lng: 99.02,
+    status: "warning",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "3",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.78,
+    lng: 99.005,
+    status: "normal",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "4",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.77,
+    lng: 99.015,
+    status: "normal",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "5",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.76,
+    lng: 98.998,
+    status: "warning",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "6",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.75,
+    lng: 99.01,
+    status: "normal",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "7",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.74,
+    lng: 99.0,
+    status: "critical",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
+  {
+    id: "8",
+    name: "ชื่อสถานี",
+    detail: "รายละเอียดตำแหน่ง................................",
+    lat: 18.73,
+    lng: 99.025,
+    status: "normal",
+    waterLevel: 150.25,
+    rainfall: 50.568,
+  },
 ];
 
-const createStationIcon = (status: string): L.DivIcon => {
-  const colorMap: Record<string, string> = {
-    normal: '#10B981',
-    warning: '#FFAE00',
-    critical: '#EF4444',
-    offline: '#6B7280',
-  };
-  const color = colorMap[status] || '#10B981';
-
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="27" height="40" viewBox="0 0 27 40">
-      <path d="M13.5 0C6.04 0 0 6.04 0 13.5c0 10.13 13.5 26.5 13.5 26.5S27 23.63 27 13.5C27 6.04 20.96 0 13.5 0zm0 18.75a5.25 5.25 0 110-10.5 5.25 5.25 0 010 10.5z" fill="${color}"/>
-      <circle cx="13.5" cy="13.5" r="5.25" fill="white" opacity="0.3"/>
-    </svg>`;
-
-  return L.divIcon({
+// ---- Custom Map Marker Icons ----
+const createIcon = (color: string) =>
+  L.divIcon({
     className: styles.customMarker,
-    html: svg,
-    iconSize: [27, 40],
-    iconAnchor: [13.5, 40],
-    popupAnchor: [0, -42],
+    html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="28" height="38">
+      <path fill="${color}" d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0zM192 272c44.183 0 80-35.817 80-80s-35.817-80-80-80-80 35.817-80 80 35.817 80 80 80z"/>
+    </svg>`,
+    iconSize: [28, 38],
+    iconAnchor: [14, 38],
+    popupAnchor: [0, -40],
   });
+
+const icons = {
+  normal: createIcon("#10B981"),
+  warning: createIcon("#FFAE00"),
+  critical: createIcon("#EF4444"),
 };
 
-function FlyToStation({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap();
-  map.flyTo([lat, lng], 16, { duration: 1 });
-  return null;
-}
-
+// ---- Main Component ----
 const MapGIS = () => {
-  const [selectedStation, setSelectedStation] = useState<StationInfo | null>(null);
-  const [showStationList, setShowStationList] = useState(false);
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null);
+  const [search, setSearch] = useState("");
 
-  const handleSelectStationFromSearch = useCallback((station: { lat: number; lng: number; id: string; name: string; location: string }) => {
-    setFlyTarget({ lat: station.lat, lng: station.lng });
-    const found = MOCK_STATIONS.find((s) => s.id === station.id);
-    if (found) setSelectedStation(found);
-    setShowStationList(false);
-  }, []);
-
-  const handleMarkerClick = useCallback((station: StationInfo) => {
-    setSelectedStation(station);
-    setFlyTarget({ lat: station.lat, lng: station.lng });
-  }, []);
-
-  const statusClass = (status: string, prefix: string) => {
-    const map: Record<string, string> = {
-      normal: `${prefix}Normal`,
-      warning: `${prefix}Warning`,
-      critical: `${prefix}Critical`,
-    };
-    return (styles as Record<string, string>)[map[status]] || '';
-  };
+  const filtered = STATIONS.filter(
+    (s) => s.name.includes(search) || s.detail.includes(search),
+  );
 
   return (
-    <div className={styles.mapPage}>
+    <div className={styles.page}>
+      {/* Map (full area) */}
       <div className={styles.mapContainer}>
         <MapContainer
-          center={[18.79, 99.01]}
-          zoom={13}
+          center={[18.78, 99.005]}
+          zoom={14}
           className={styles.mapCanvas}
           zoomControl={false}
         >
@@ -96,102 +141,70 @@ const MapGIS = () => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
 
-          {flyTarget && <FlyToStation lat={flyTarget.lat} lng={flyTarget.lng} />}
-
-          {MOCK_STATIONS.map((s) => (
-            <Marker
-              key={s.id}
-              position={[s.lat, s.lng]}
-              icon={createStationIcon(s.status)}
-              eventHandlers={{
-                click: () => handleMarkerClick(s),
-              }}
-            />
+          {STATIONS.map((s) => (
+            <Marker key={s.id} position={[s.lat, s.lng]} icon={icons[s.status]}>
+              <Popup className={styles.customPopup} closeButton={false}>
+                <div className={styles.popupCard}>
+                  <div className={styles.popupTitle}>{s.name}</div>
+                  <div className={styles.popupRow}>
+                    <span className={styles.popupLabel}>ระดับน้ำ</span>
+                  </div>
+                  <div className={styles.popupRow}>
+                    <span className={styles.popupValue}>
+                      {s.waterLevel.toFixed(3)}
+                    </span>
+                    <span className={styles.popupUnit}>เมตร</span>
+                  </div>
+                  <div className={styles.popupRow}>
+                    <span className={styles.popupLabel}>ปริมาณน้ำฝนสะสม</span>
+                  </div>
+                  <div className={styles.popupRow}>
+                    <span className={styles.popupValue}>
+                      {s.rainfall.toFixed(3)}
+                    </span>
+                    <span className={styles.popupUnit}>มิลลิเมตร/ชั่วโมง</span>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
           ))}
         </MapContainer>
 
-        <button className={styles.locateBtn} title="Locate me">
-          <Crosshair size={15} />
-        </button>
-
-        {selectedStation && !showStationList && (
-          <div
-            className={styles.stationPopup}
-            style={{
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <div className={styles.popupCard}>
-              <div className={`${styles.popupStatusBar} ${statusClass(selectedStation.status, 'popupStatusBar')}`} />
-              <div className={styles.popupBody}>
-                <p className={styles.popupStationName}>{selectedStation.name}</p>
-                <div className={styles.popupDataGroup}>
-                  <div className={styles.popupDataRow}>
-                    <span className={styles.popupDataLabel}>ระดับน้ำ</span>
-                    <div className={styles.popupDataValue}>
-                      <span className={`${styles.popupDataNumber} ${statusClass(selectedStation.status, 'popupDataNumber')}`}>
-                        {selectedStation.waterLevel.toFixed(3)}
-                      </span>
-                      <span className={styles.popupDataUnit}>เมตร</span>
-                    </div>
-                  </div>
-                  <div className={styles.popupDataRow}>
-                    <span className={styles.popupDataLabel}>ปริมาณน้ำฝนสะสม</span>
-                    <div className={styles.popupDataValue}>
-                      <span className={`${styles.popupDataNumber} ${statusClass(selectedStation.status, 'popupDataNumber')}`}>
-                        {selectedStation.rainfall.toFixed(3)}
-                      </span>
-                      <span className={styles.popupDataUnit}>มิลลิเมตร/ชั่วโมง</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.popupArrow} />
-          </div>
-        )}
-
-        {showStationList && (
-          <div className={styles.stationListPanel}>
-            <button
-              className={styles.closePanelBtn}
-              onClick={() => setShowStationList(false)}
+        {/* Right Panel: Search + Station List */}
+        <div className={styles.rightPanel}>
+          {/* Search */}
+          <div className={styles.searchBox}>
+            <svg
+              className={styles.searchIcon}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              <X size={18} />
-            </button>
-
-            <MapSearch
-              stations={MOCK_STATIONS.map((s) => ({
-                id: s.id,
-                name: s.name,
-                location: s.location,
-                lat: s.lat,
-                lng: s.lng,
-              }))}
-              onSelectStation={handleSelectStationFromSearch}
-              searchPlaceholder="Search"
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search"
+              className={styles.searchInput}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
 
-            {MOCK_STATIONS.map((s) => (
-              <div
-                key={s.id}
-                className={styles.stationRow}
-                onClick={() => {
-                  setFlyTarget({ lat: s.lat, lng: s.lng });
-                  setSelectedStation(s);
-                  setShowStationList(false);
-                }}
-              >
-                <span className={styles.stationRowName}>{s.name}</span>
-                <span className={styles.stationRowLocation}>
-                  รายระเอียดตำแหน่ง{String.fromCharCode(8230).repeat(20)}
-                </span>
+          {/* Station List */}
+          <div className={styles.stationList}>
+            {filtered.map((s) => (
+              <div key={s.id} className={styles.stationRow}>
+                <span className={styles.stationName}>{s.name}</span>
+                <span className={styles.stationDetail}>{s.detail}</span>
               </div>
             ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

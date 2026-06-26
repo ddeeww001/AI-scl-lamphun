@@ -1,344 +1,186 @@
-.mapPage {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  background: var(--color-darkSlate);
+.page {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-ui), sans-serif;
   overflow: hidden;
 }
 
+/* ---- Map Area ---- */
 .mapContainer {
-  flex: 1;
   position: relative;
+  flex: 1;
   width: 100%;
-  min-height: 0;
+  height: 100%;
 }
 
 .mapCanvas {
   width: 100%;
-  height: 100%;
+  height: 100% !important;
+  min-height: calc(100vh - 80px);
   z-index: 1;
 }
 
-.customMarker {
-  background: transparent;
-  border: none;
-}
-
-.stationPin {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 0;
-  gap: 4px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.stationPin:hover {
-  transform: scale(1.15);
-}
-
-.pinIcon {
-  width: 27px;
-  height: 40px;
-}
-
-.pinHead {
-  width: 27px;
-  height: 32px;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pinHeadNormal {
-  background: var(--color-status-normal);
-}
-
-.pinHeadWarning {
-  background: var(--color-status-warning);
-}
-
-.pinHeadCritical {
-  background: var(--color-status-critical);
-}
-
-.pinShadow {
-  width: 14px;
-  height: 5px;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 50%;
-}
-
-.locateBtn {
+/* ---- Right Panel ---- */
+.rightPanel {
   position: absolute;
-  width: 30px;
-  height: 30px;
+  top: 20px;
   right: 20px;
   bottom: 20px;
   z-index: 1000;
-  background: var(--color-bg-surface);
-  border: none;
-  border-radius: 100px;
+  width: 380px;
+  background: rgba(45, 50, 60, 0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  color: var(--color-text-primary);
-  font-size: 14px;
-  padding: 0;
-  transition: background 0.2s;
-}
-
-.locateBtn:hover {
-  background: var(--color-bg-page);
-}
-
-.stationPopup {
-  position: absolute;
-  width: 208px;
-  z-index: 1050;
-  pointer-events: auto;
-}
-
-.popupCard {
-  background: var(--color-bg-surface);
-  border-radius: 10px;
+  flex-direction: column;
   overflow: hidden;
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.popupStatusBar {
-  height: 8px;
-  width: 100%;
-}
-
-.popupStatusBarNormal {
-  background: var(--color-status-normal);
-}
-
-.popupStatusBarWarning {
-  background: var(--color-status-warning);
-}
-
-.popupStatusBarCritical {
-  background: var(--color-status-critical);
-}
-
-.popupBody {
-  padding: 12px 13px 10px;
-}
-
-.popupStationName {
-  font-family: var(--font-ui);
-  font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--color-text-primary);
-  text-align: center;
-  margin: 0 0 8px 0;
-}
-
-.popupDataGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.popupDataRow {
-  display: flex;
-  flex-direction: column;
-}
-
-.popupDataLabel {
-  font-family: var(--font-ui);
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--color-text-primary);
-}
-
-.popupDataValue {
-  display: flex;
-  align-items: flex-end;
-  gap: 5px;
-}
-
-.popupDataNumber {
-  font-family: var(--font-ui);
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.popupDataNumberNormal {
-  color: var(--color-status-normal);
-}
-
-.popupDataNumberWarning {
-  color: var(--color-status-warning);
-}
-
-.popupDataNumberCritical {
-  color: var(--color-status-critical);
-}
-
-.popupDataUnit {
-  font-family: var(--font-ui);
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--color-text-secondary);
-}
-
-.popupArrow {
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid var(--color-bg-surface);
-  margin: 0 auto;
-}
-
-.stationListPanel {
-  position: absolute;
-  right: 20px;
-  top: 20px;
-  width: 677px;
-  max-height: calc(100% - 40px);
-  z-index: 1000;
-  background: rgba(11, 11, 11, 0.56);
-  border-radius: 10px;
-  padding: 20px 46px 88px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-  pointer-events: auto;
-  box-sizing: border-box;
-}
-
-.stationListSearchBar {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 1px 15px;
-  gap: 25px;
-  width: 100%;
-  height: 35px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid var(--color-darkBlue);
-  border-radius: 100px;
-  box-sizing: border-box;
-}
-
-.stationListSearchIcon {
-  color: rgba(0, 0, 0, 0.5);
+/* Search */
+.searchBox {
   display: flex;
   align-items: center;
+  margin: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 40px;
+  padding: 10px 16px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-.stationListSearchInput {
+.searchIcon {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.searchInput {
   background: transparent;
   border: none;
   outline: none;
-  font-family: var(--font-ui);
-  font-weight: 400;
+  color: #f1f5f9;
+  font-family: var(--font-ui), sans-serif;
   font-size: 14px;
-  line-height: 20px;
-  color: rgba(0, 0, 0, 0.5);
   width: 100%;
 }
 
-.stationListSearchInput::placeholder {
-  color: rgba(0, 0, 0, 0.5);
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+/* Station List */
+.stationList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 16px;
+}
+
+.stationList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.stationList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stationList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 .stationRow {
   display: flex;
-  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  padding: 4px 13px;
-  gap: 100px;
-  width: 100%;
-  height: 30px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 100px;
+  padding: 13px 12px;
+  border-radius: 8px;
   cursor: pointer;
-  box-sizing: border-box;
-  transition: background 0.2s;
+  transition: background 0.15s;
+  gap: 12px;
 }
 
 .stationRow:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.stationRowName {
-  font-family: var(--font-ui);
-  font-weight: 400;
+.stationName {
   font-size: 14px;
-  line-height: 20px;
-  color: var(--color-text-onBrand);
-  min-width: 47px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.stationRowLocation {
-  font-family: var(--font-ui);
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--color-text-onBrand);
-  flex: 1;
+.stationDetail {
+  font-size: 13px;
+  color: #94a3b8;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.closePanelBtn {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  background: none;
+/* ---- Map Marker ---- */
+.customMarker {
+  background: transparent;
   border: none;
-  color: var(--color-text-onBrand);
-  cursor: pointer;
+}
+
+/* ---- Popup ---- */
+.customPopup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #10b981;
+}
+
+.customPopup .leaflet-popup-content {
+  margin: 0;
+}
+
+.customPopup .leaflet-popup-tip-container {
+  display: none;
+}
+
+.popupCard {
+  padding: 14px 16px;
+  background: #fff;
+  min-width: 180px;
+  border-left: 4px solid #10b981;
+}
+
+.popupTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.popupRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.popupLabel {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.popupValue {
   font-size: 18px;
-  padding: 4px;
-  z-index: 2;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  font-weight: 700;
+  color: #10b981;
+  font-family: var(--font-data), monospace;
 }
 
-.closePanelBtn:hover {
-  opacity: 1;
-}
-
-@media (max-width: 900px) {
-  .stationListPanel {
-    width: calc(100% - 40px);
-    left: 20px;
-    right: 20px;
-    padding: 16px 20px 40px;
-  }
-}
-
-@media (max-width: 600px) {
-  .stationListPanel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-height: 100%;
-    border-radius: 0;
-    padding: 16px;
-  }
+.popupUnit {
+  font-size: 12px;
+  color: #6b7280;
 }

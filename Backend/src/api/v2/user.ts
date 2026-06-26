@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { jwt } from '@elysiajs/jwt'
 import { and, eq, ne } from 'drizzle-orm/sql/expressions/conditions'
-import { db } from '../..'
+import { db } from '../../db/database'
 import { deviceOwners, devices, users } from '../../db/schema'
 
 const getBearerToken = (authHeader?: string) => {
@@ -174,7 +174,18 @@ export const userRoutes = new Elysia({
 				}
 			}
 
-			await database.update(users).set(updatePayload).where(eq(users.id, body.id))
+			try {
+				await database.update(users).set(updatePayload).where(eq(users.id, body.id))
+			} catch (error) {
+				const pgError = error as { code?: string }
+				if (pgError.code === '23505') {
+					return {
+						code: 409,
+						message: 'Username or email already exists'
+					}
+				}
+				throw error
+			}
 
 			return {
 				code: 200,
