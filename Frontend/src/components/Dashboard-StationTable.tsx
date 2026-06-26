@@ -124,7 +124,7 @@ const StationTable: React.FC<StationTableProps> = ({
   };
 
   if (isLoading) {
-    return <div className="text-center p-4">Loading Data...</div>;
+    return <div className={styles.loadingText}>Loading Data...</div>;
   }
 
   return (
@@ -192,7 +192,7 @@ const StationTable: React.FC<StationTableProps> = ({
       {/* Data Rows */}
       <div className={styles.tableBody}>
         {tableData.length === 0 ? (
-          <div className="text-center p-4 text-gray-400">ไม่มีข้อมูลสถานี</div>
+          <div className={styles.emptyText}>ไม่มีข้อมูลสถานี</div>
         ) : (
           tableData.map((row) => (
             <div key={row.id} className={styles.dataRow}>
@@ -201,11 +201,11 @@ const StationTable: React.FC<StationTableProps> = ({
                 {/* กู้คืน Status Logic กลับมาโชว์คู่กับชื่อสถานีแบบเนียนๆ */}
                 {row.status !== "normal" && (
                   <span
-                    style={{
-                      marginLeft: "8px",
-                      fontSize: "10px",
-                      color: row.status === "critical" ? "red" : "orange",
-                    }}
+                    className={`${styles.statusText} ${
+                      row.status === "critical"
+                        ? styles.statusCritical
+                        : styles.statusWarning
+                    }`}
                   >
                     ({row.status})
                   </span>
