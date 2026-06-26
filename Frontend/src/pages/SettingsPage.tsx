@@ -1,46 +1,80 @@
 import { useState, useEffect } from 'react';
-import StationTable from '../components/Dashboard-StationTable';
-import { MockDeviceService, type DeviceRangeData } from '../service/deviceService';
+// import ให้ถูกตัว! ชี้ไปที่ไฟล์ StationTable ที่เราจะใช้จัดการรายการสถานี
+import StationTable from '../components/StationTable';
+import { type StationData } from '../components/Station'; 
+import styles from '../styles/SettingsPage.module.css';
+import AddSensorModal from '../components/AddSensorModal';
 
 const SettingsPage = () => {
-  const [waterHistory, setWaterHistory] = useState<DeviceRangeData[]>([]);
-  const [rainHistory, setRainHistory] = useState<DeviceRangeData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [stations, setStations] = useState<StationData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // สถานะสำหรับเปิด-ปิด Modal Add Sensor
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchMockDataForSettings = async () => {
+    // จำลองการดึงข้อมูลรายการสถานีล่าสุด (Mock Data)
+    const fetchStations = async () => {
       setIsLoading(true);
       try {
-        const endTime = Date.now();
-        const startTime = endTime - (24 * 60 * 60 * 1000); // ดึงข้อมูลย้อนหลัง 24 ชม.
-        const mockId = "MOCK_DEVICE_001";
-        const mockKey = "MOCK_KEY";
+        // ในอนาคต เปลี่ยนตรงนี้เป็นการยิง API ไปหา Backend ของเต้ได้เลย
+        const mockStations: StationData[] = [
+          { id: '1', name: 'ชื่อสถานี 1', location: 'Location A', status: 'normal', date: new Date(), waterLevel: '150.250', rainfall: '50.555' },
+          { id: '2', name: 'ชื่อสถานี 2', location: 'Location B', status: 'normal', date: new Date(), waterLevel: '150.250', rainfall: '50.555' },
+          { id: '3', name: 'ชื่อสถานี 3', location: 'Location C', status: 'warning', date: new Date(), waterLevel: '150.250', rainfall: '50.555' },
+          { id: '4', name: 'ชื่อสถานี 4', location: 'Location D', status: 'critical', date: new Date(), waterLevel: '150.250', rainfall: '50.555' },
+        ];
+        
+        // สมมติว่ามี Delay 1 วิ เพื่อให้เห็น Loading
+        setTimeout(() => {
+          setStations(mockStations);
+          setIsLoading(false);
+        }, 1000);
 
-        // เรียกดึงข้อมูลจำลองจาก Service มาสวมให้ตาราง
-        const [waterRes, rainRes] = await Promise.all([
-          MockDeviceService.getHistory(mockId, mockKey, "water_level", startTime, endTime),
-          MockDeviceService.getHistory(mockId, mockKey, "rain_fall", startTime, endTime),
-        ]);
-
-        setWaterHistory(waterRes || []);
-        setRainHistory(rainRes || []);
       } catch (error) {
-        console.error("Error loading settings table data:", error);
-      } finally {
+        console.error("Error loading stations:", error);
         setIsLoading(false);
       }
     };
 
-    fetchMockDataForSettings();
+    fetchStations();
   }, []);
 
   return (
-    <div style={{ width: '100%' }}>
-      {/* ดึงโครงสร้างตารางแคปซูลที่เราปรับแต่งสไตล์ Bootstrap ไว้มาแสดงผล */}
-      <StationTable 
-        waterData={waterHistory} 
-        rainData={rainHistory} 
-        isLoading={isLoading} 
+    <div className={styles.pageWrapper}>
+      
+      {/* ส่วน Header ของหน้า Setting & ปุ่ม Add */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+         <h1 className="text-h1" style={{ color: 'var(--color-text-primary)' }}>หน้าการตั้งค่า (Demo)</h1>
+         <button 
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              backgroundColor: 'var(--color-text-primary)', // ปุ่มสีขาวแบบในภาพ
+              color: 'var(--color-bg-page)',
+              border: 'none',
+              padding: '8px 24px',
+              borderRadius: '20px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+         >
+           Add
+         </button>
+      </div>
+
+      {isLoading ? (
+        <div style={{ color: 'var(--color-text-primary)' }}>Loading Stations...</div>
+      ) : (
+        <StationTable stations={stations} />
+      )}
+      <AddSensorModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => {
+          // ถ้าเพิ่มสำเร็จ สั่งให้ดึงข้อมูลสถานีใหม่
+          console.log("Refresh Table...");
+          // fetchStations(); 
+        }}
       />
     </div>
   );

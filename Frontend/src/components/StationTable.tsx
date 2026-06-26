@@ -1,72 +1,78 @@
 // src/components/Station/StationTable.tsx
 import React from 'react';
-import { MoreHorizontal } from 'lucide-react';
-// Import Type เข้ามาเพื่อให้ TypeScript รู้จักหน้าตาข้อมูล
+import { Settings } from 'lucide-react'; // เปลี่ยนจาก MoreHorizontal เป็นฟันเฟือง
 import { type StationData } from './Station.ts'; 
 
 interface StationTableProps {
-  stations: StationData[]; // รับข้อมูลรายการสถานีเข้ามา
+  stations: StationData[]; 
 }
 
 const StationTable: React.FC<StationTableProps> = ({ stations }) => {
   return (
-    <div className="w-full bg-white rounded-lg shadow-md overflow-hidden">
-      <table className="w-full table-auto text-left">
+    <div style={{ width: '100%', overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px', textAlign: 'center', color: 'var(--color-text-primary)' }}>
         
-        {/* Header */}
-        <thead className="bg-[#5b6b88] text-white text-sm font-bold uppercase tracking-wide">
-          <tr>
-            <th className="py-4 px-6 text-center w-1/4">STATION NAME</th>
-            <th className="py-4 px-6 text-center w-1/4">LOCATION</th>
-            <th className="py-4 px-6 text-center w-1/6">STATUS</th>
-            <th className="py-4 px-6 text-center w-1/6">DATE</th>
-            <th className="py-4 px-6 text-center w-1/6">ACTION</th>
+        {/* Header - ตามสไตล์ Dark UI ในภาพ */}
+        <thead>
+          <tr style={{ color: 'var(--color-text-secondary)', fontSize: '14px', borderBottom: '1px solid var(--color-border-line)' }}>
+            <th style={{ padding: '12px', textAlign: 'left', width: '30%' }}>ชื่อสถานี</th>
+            <th style={{ padding: '12px' }}>เวลา</th>
+            {/* คอลัมน์ไอคอนสถานะ */}
+            <th style={{ padding: '12px' }}>📶</th>
+            <th style={{ padding: '12px' }}>☁️</th>
+            <th style={{ padding: '12px' }}>ระดับน้ำ(เมตร)</th>
+            <th style={{ padding: '12px' }}>ปริมาณน้ำฝน(มิลลิเมตร/ชั่วโมง)</th>
           </tr>
         </thead>
 
-        {/* Body */}
-        <tbody className="text-gray-600 text-sm font-light">
+        {/* Body - ทำแถวแบบ Capsule โค้งๆ */}
+        <tbody style={{ fontSize: '14px', fontWeight: 500 }}>
           {stations.length > 0 ? (
             stations.map((item, index) => (
               <tr 
                 key={item.id || index} 
-                className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200"
+                style={{ backgroundColor: 'var(--color-bg-surface)' }} // พื้นหลังแถวสีเข้ม
               >
-                <td className="py-4 px-6 text-center font-bold text-gray-800">{item.name}</td>
-                <td className="py-4 px-6 text-center text-gray-800 font-medium">{item.location}</td>
+                {/* ชื่อสถานี + ไอคอนฟันเฟือง */}
+                <td style={{ padding: '16px 20px', textAlign: 'left', borderRadius: '24px 0 0 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Settings size={18} style={{ color: 'var(--color-text-secondary)', cursor: 'pointer' }} />
+                  {item.name}
+                </td>
                 
-                {/* Status Column */}
-                <td className="py-4 px-6">
-                  <div className="flex items-center justify-center">
-                    <div className="flex items-center bg-gray-100 rounded-full px-4 py-1 shadow-sm border border-gray-100">
-                      <span className={`w-3 h-3 rounded-full mr-2 ${
-                        item.status === 'normal' ? 'bg-green-500' : 'bg-gray-400'
-                      }`}></span>
-                      <span className={`text-xs font-bold uppercase ${
-                        item.status === 'normal' ? 'text-green-700' : 'text-gray-500'
-                      }`}>
-                        {item.status === 'normal' ? 'online' : 'offline'}
-                      </span>
-                    </div>
-                  </div>
+                {/* เวลา */}
+                <td style={{ padding: '16px 0' }}>11:00</td>
+                
+                {/* ไอคอนสัญญาณ (ตัวอย่างโชว์สีตามสถานะ) */}
+                <td style={{ padding: '16px 0' }}>
+                   <span style={{ 
+                     display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%',
+                     backgroundColor: item.status === 'normal' ? 'var(--color-status-normal)' : (item.status === 'warning' ? 'var(--color-status-warning)' : 'var(--color-status-critical)') 
+                   }}></span>
+                </td>
+                <td style={{ padding: '16px 0' }}>
+                   <span style={{ 
+                     display: 'inline-block', width: '12px', height: '8px', borderRadius: '4px',
+                     backgroundColor: item.status === 'normal' ? 'var(--color-status-normal)' : (item.status === 'warning' ? 'var(--color-status-warning)' : 'var(--color-status-critical)') 
+                   }}></span>
                 </td>
 
-                <td className="py-4 px-6 text-center font-bold text-gray-700">
-                  {item.date ? item.date.toLocaleDateString('th-TH') : '-'}
+                {/* ค่าระดับน้ำ (font ตัวเลข) */}
+                <td style={{ padding: '16px 0', fontFamily: 'var(--font-data)' }}>
+                  <span style={{ color: item.status === 'critical' ? 'var(--color-status-critical)' : (item.status === 'warning' ? 'var(--color-status-warning)' : 'var(--color-status-normal)') }}>
+                     {item.waterLevel || '150.250'}
+                  </span>
                 </td>
                 
-                <td className="py-4 px-6 text-center">
-                  <div className="flex items-center justify-center text-gray-400 hover:text-blue-600 cursor-pointer">
-                    <MoreHorizontal size={20} />
-                  </div>
+                {/* ค่าฝน (font ตัวเลข) */}
+                <td style={{ padding: '16px 0', fontFamily: 'var(--font-data)', borderRadius: '0 24px 24px 0', color: 'var(--color-text-secondary)' }}>
+                  {item.rainfall || '50.555'}
                 </td>
               </tr>
             ))
           ) : (
-            // กรณีไม่มีข้อมูล
             <tr>
-              <td colSpan={5} className="py-8 text-center text-gray-400">
-                No stations found.
+              <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                ไม่มีข้อมูลสถานี
               </td>
             </tr>
           )}
