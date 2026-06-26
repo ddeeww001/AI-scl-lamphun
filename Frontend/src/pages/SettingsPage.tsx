@@ -1,50 +1,90 @@
+// src/pages/SettingsPage.tsx
 import { useState, useEffect } from 'react';
-import StationTable from '../components/Dashboard-StationTable';
-import { MockDeviceService, type DeviceRangeData } from '../service/deviceService';
+import StationTable from '../components/StationTable';
+import AddSensorModal from '../components/AddSensorModal';
+import EditStationModal from '../components/EditStationModal';
+import { type StationData, mockDatabaseData, calculateStationStatus } from '../components/Station'; 
 import styles from '../styles/SettingsPage.module.css';
 
 const SettingsPage = () => {
-  const [waterHistory, setWaterHistory] = useState<DeviceRangeData[]>([]);
-  const [rainHistory, setRainHistory] = useState<DeviceRangeData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [stations, setStations] = useState<StationData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // State ควบคุม Modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingStation, setEditingStation] = useState<StationData | null>(null);
 
   useEffect(() => {
-    const fetchMockDataForSettings = async () => {
+    const fetchStations = async () => {
       setIsLoading(true);
       try {
-        const endTime = Date.now();
-        const startTime = endTime - (24 * 60 * 60 * 1000); // ดึงข้อมูลย้อนหลัง 24 ชม.
-        const mockId = "MOCK_DEVICE_001";
-        const mockKey = "MOCK_KEY";
-
-        // เรียกดึงข้อมูลจำลองจาก Service มาสวมให้ตาราง
-        const [waterRes, rainRes] = await Promise.all([
-          MockDeviceService.getHistory(mockId, mockKey, "water_level", startTime, endTime),
-          MockDeviceService.getHistory(mockId, mockKey, "rain_fall", startTime, endTime),
-        ]);
-
-        setWaterHistory(waterRes || []);
-        setRainHistory(rainRes || []);
+        setTimeout(() => {
+          setStations(mockDatabaseData);
+          setIsLoading(false);
+        }, 1000);
       } catch (error) {
-        console.error("Error loading settings table data:", error);
-      } finally {
+        console.error("Error loading stations:", error);
         setIsLoading(false);
       }
     };
-
-    fetchMockDataForSettings();
+    fetchStations();
   }, []);
 
+  // ฟังก์ชันเตรียมข้อมูลก่อนส่งให้ Modal Edit
+  const handleEditClick = (station: StationData) => {
+    setEditingStation(station);
+    setIsEditModalOpen(true);
+  };
+
+  // ฟังก์ชันรับข้อมูลกลับมาจาก Modal Edit เพื่อคำนวณ Status และอัปเดตตาราง
+  const handleSaveEdit = (stationId: string, newThreshold: string) => {
+    const updatedStations = stations.map(station => {
+      if (station.id === stationId) {
+        const newStatus = calculateStationStatus(station.waterLevel, newThreshold);
+        return { ...station, alertThreshold: newThreshold, status: newStatus };
+      }
+      return station; 
+    });
+    setStations(updatedStations);
+  };
+
   return (
-    <div className={styles.pageWrapper}>
-      {/* ดึงโครงสร้างตารางแคปซูลที่เราปรับแต่งสไตล์ Bootstrap ไว้มาแสดงผล */}
-      <StationTable 
-        waterData={waterHistory} 
-        rainData={rainHistory} 
-        isLoading={isLoading} 
+    <div className={styles.pageWrapper || ''} style={{ width: '100%' }}>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+         <h1 style={{ color: 'var(--color-text-primary)', fontSize: '24px', fontWeight: 700 }}>หน้าการตั้งค่า (Demo)</h1>
+         <button 
+            onClick={() => setIsAddModalOpen(true)}
+            style={{ backgroundColor: 'var(--color-text-primary)', color: 'var(--color-bg-page)', border: 'none', padding: '8px 24px', borderRadius: '20px', fontWeight: 600, cursor: 'pointer' }}
+         >
+           Add
+         </button>
+      </div>
+
+      {isLoading ? (
+        <div style={{ color: 'var(--color-text-primary)' }}>Loading Stations...</div>
+      ) : (
+        <StationTable stations={stations} onEdit={handleEditClick} />
+      )}
+
+      {/* Modal Add Sensor */}
+      <AddSensorModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={() => console.log("โหลดข้อมูลตารางใหม่หลังจากเพิ่มเสร็จ")}
       />
+
+      {/* Modal Edit Sensor */}
+      <EditStationModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        station={editingStation}
+        onSave={handleSaveEdit}
+      />
+
     </div>
   );
 };
 
-export default SettingsPage;
+export default SettingsPage;
