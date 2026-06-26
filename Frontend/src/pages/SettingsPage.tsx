@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import StationTable from '../components/Dashboard-StationTable';
 import { MockDeviceService, type DeviceRangeData } from '../service/deviceService';
-import styles from '../styles/SettingsPage.module.css';
 
 const SettingsPage = () => {
   const [waterHistory, setWaterHistory] = useState<DeviceRangeData[]>([]);
@@ -36,7 +35,7 @@ const SettingsPage = () => {
   }, []);
 
   return (
-    <div className={styles.pageWrapper}>
+    <div style={{ width: '100%' }}>
       {/* ดึงโครงสร้างตารางแคปซูลที่เราปรับแต่งสไตล์ Bootstrap ไว้มาแสดงผล */}
       <StationTable 
         waterData={waterHistory} 
@@ -47,4 +46,4 @@ const SettingsPage = () => {
   );
 };
 
-export default SettingsPage;
+export default SettingsPage;
