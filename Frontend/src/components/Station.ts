@@ -1,50 +1,70 @@
 // src/components/Station/Station.ts
 
-// 1. Export Interface และเพิ่ม Field ที่จำเป็น
+// 1. กำหนดโครงสร้างข้อมูล (Data Contract)
 export interface StationData {
   id: string;
   name: string;
   location: string;
-  status: 'normal' | 'warning' | 'critical';
+  status: 'normal' | 'warning' | 'critical' | 'offline';
   date: Date;
-  // เพิ่ม 2 บรรทัดนี้ เพื่อให้ใช้งานกับตารางหน้า Settings ได้
-  waterLevel?: string; 
+  waterLevel?: string;
   rainfall?: string;
+  alertThreshold?: string; // ระดับน้ำแจ้งเตือนที่ตั้งค่าไว้
 }
 
-// 2. Export Mock Data (ข้อมูลจำลอง)
+// 2. Logic การคำนวณสถานะแบบ Real-time
+export const calculateStationStatus = (waterLevel?: string, threshold?: string): 'normal' | 'warning' | 'critical' => {
+  if (!waterLevel || !threshold) return 'normal';
+
+  const currentWater = parseFloat(waterLevel);
+  const maxLimit = parseFloat(threshold);
+
+  if (isNaN(currentWater) || isNaN(maxLimit)) return 'normal';
+
+  if (currentWater >= maxLimit) {
+    return 'critical'; 
+  } else if (currentWater >= maxLimit * 0.8) {
+    return 'warning';  
+  }
+  
+  return 'normal'; 
+};
+
+// 3. ข้อมูลจำลองตั้งต้น (Mock Data)
 export const mockDatabaseData: StationData[] = [
   {
     id: "1",
-    name: "สถานี A (ตัวอย่าง)",
-    location: "ส่วนกลาง",
+    name: "สถานีลำพูน (ตัวอย่าง)",
+    location: "อ.เมือง",
     status: "normal",
     date: new Date(),
     waterLevel: "150.250",
-    rainfall: "50.555"
+    rainfall: "50.555",
+    alertThreshold: "180.000" // ตั้งเกณฑ์ไว้ที่ 180
   },
   {
     id: "2",
-    name: "สถานี B (ตัวอย่าง)",
-    location: "จุดสูบน้ำ",
+    name: "สถานีแม่กุ (ตัวอย่าง)",
+    location: "อ.แม่สอด",
     status: "warning",
     date: new Date(),
     waterLevel: "151.000",
-    rainfall: "60.000"
+    rainfall: "60.000",
+    alertThreshold: "160.000"
   }
 ];
 
-// 3. Export ฟังก์ชัน transformData
-// ฟังก์ชันนี้รับข้อมูลดิบมา แล้วแปลงให้ตรงกับ StationData
+// เพิ่มฟังก์ชันนี้ลงไปท้ายไฟล์ Station.ts ครับ
 export const transformData = (data: any[]): StationData[] => {
-  // Logic การ Map ข้อมูลเพื่อป้องกันกรณีมีค่าเป็น null/undefined ส่งมา
-  return data.map((item, index) => ({
-    id: item.id || String(index),
-    name: item.name || "Unknown Station",
+  return data.map((item) => ({
+    ...item,
+    id: item.id || "0",
+    name: item.name || "Unknown",
     location: item.location || "-",
     status: item.status || "normal",
     date: item.date || new Date(),
     waterLevel: item.waterLevel || "-",
-    rainfall: item.rainfall || "-"
+    rainfall: item.rainfall || "-",
+    alertThreshold: item.alertThreshold || "0"
   }));
 };
